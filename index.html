@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Control de Información - Vista Masiva</title>
+    <!-- Chart.js para gráficos avanzados -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-principal: #f8fafc;
+            --bg-tarjeta: #ffffff;
+            --texto-oscuro: #0f172a;
+            --texto-mutado: #64748b;
+            --primario: #1e293b;
+            --azul-cr: #002f6c;
+            --rojo-cr: #ce1126;
+            --verde-exito: #10b981;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-principal);
+            color: var(--texto-oscuro);
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--primario);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 4px solid var(--rojo-cr);
+        }
+
+        .header-titulos h1 { margin: 0; font-size: 1.6rem; }
+        .header-titulos p { margin: 5px 0 0 0; opacity: 0.8; font-size: 0.85rem; }
+
+        .widget-calendario {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            text-align: right;
+            border-left: 3px solid var(--verde-exito);
+        }
+        .widget-calendario span { color: #38bdf8; font-weight: bold; }
+
+        .contenedor {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Panel de Controles */
+        .panel-controles {
+            background: var(--bg-tarjeta);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .panel-controles label { font-weight: 600; }
+        .panel-controles input[type="range"] { flex-grow: 1; max-width: 300px; }
+
+        /* Dashboard Económico */
+        .grid-economico {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 500px) {
+            .grid-economico { grid-template-columns: 1fr; }
+        }
+
+        .tarjeta-eco {
+            background: var(--bg-tarjeta);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--azul-cr);
+        }
+
+        .header-tarjeta-eco {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .header-tarjeta-eco h2 { margin: 0; font-size: 1.1rem; }
+        .selector-tiempo-grafica {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.8rem;
+            background: #f8fafc;
+        }
+        
+        .valores-actuales {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .dato-precio { font-weight: bold; color: #0284c7; }
+
+        .alerta-proxima {
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            font-weight: 500;
+            background-color: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444;
+        }
+
+        /* Contenedor de Noticias */
+        .seccion-titulo {
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 8px;
+            margin: 40px 0 20px 0;
+            font-size: 1.3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .contador-noticias-tag {
+            font-size: 0.85rem;
+            background: #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: var(--texto-mutado);
+        }
+
+        .grid-noticias {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .noticia-card {
+            background: var(--bg-tarjeta);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
+        }
+
+        .noticia-body { padding: 18px; flex-grow: 1; display: flex; flex-direction: column; }
+        .fuente-tag {
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+            align-self: flex-start;
+            margin-bottom: 10px;
+        }
+        .tag-cr { background: #e0f2fe; color: #0369a1; }
+        .tag-global { background: #f3e8ff; color: #6b21a8; }
+
+        .noticia-body h3 { margin: 0 0 10px 0; font-size: 0.95rem; line-height: 1.4; }
+        .noticia-body h3 a { color: var(--texto-oscuro); text-decoration: none; }
+        .noticia-body h3 a:hover { color: #0284c7; }
+        .noticia-body p { color: var(--texto-mutado); font-size: 0.8rem; margin: 0 0 15px 0; line-height: 1.5; }
+        .noticia-fecha { font-size: 0.75rem; color: #94a3b8; margin-top: auto; display: flex; justify-content: space-between; }
+
+        canvas { max-height: 200px; width: 100% !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-titulos">
+            <h1>Portal de Control Informativo Cronológico</h1>
+            <p>Lista Unificada — 30 Nacionales y 30 Internacionales Ordenadas por Tiempo</p>
+        </div>
+        <div class="widget-calendario" id="calendario-fiscal">Cargando fecha...</div>
+    </header>
+
+    <div class="contenedor">
+
+        <!-- DASHBOARD ECONÓMICO -->
+        <div class="grid-economico">
+            
+            <!-- GRÁFICA DÓLAR -->
+            <div class="tarjeta-eco">
+                <div class="header-tarjeta-eco">
+                    <h2>Histórico de Divisa USD/CRC (BCCR)</h2>
+                    <select class="selector-tiempo-grafica" id="rangoDolar" onchange="actualizarGraficaDolar()">
+                        <option value="1M">Último Mes</option>
+                        <option value="6M">Últimos 6 Meses</option>
+                        <option value="1Y" selected>Último Año (Máx)</option>
+                    </select>
+                </div>
+                <div class="valores-actuales">
+                    <div>Compra Promedio: <span class="dato-precio">₡449.50</span></div>
+                    <div>Venta Promedio: <span class="dato-precio">₡455.00</span></div>
+                </div>
+                <canvas id="chartDolar"></canvas>
+            </div>
+
+            <!-- GRÁFICA COMBUSTIBLES -->
+            <div class="tarjeta-eco" style="border-top-color: var(--rojo-cr);">
+                <div class="header-tarjeta-eco">
+                    <h2>Histórico Combustibles por Litro (RECOPE)</h2>
+                    <select class="selector-tiempo-grafica" id="rangoGas" onchange="actualizarGraficaCombustibles()">
+                        <option value="3M">Último Trimestre</option>
+                        <option value="6M">Últimos 6 Meses</option>
+                        <option value="1Y" selected>Último Año (Máx)</option>
+                    </select>
+                </div>
+                <div class="valores-actuales">
+                    <div>Súper: <span class="dato-precio" style="color:#ef4444">₡733</span></div>
+                    <div>Regular: <span class="dato-precio" style="color:#f59e0b">₡748</span></div>
+                    <div>Diésel: <span class="dato-precio" style="color:#3b82f6">₡716</span></div>
+                </div>
+                <canvas id="chartCombustibles"></canvas>
+                <div class="alerta-proxima">
+                    ⚠️ <strong>Proyección ARESEP:</strong> Análisis de costos extraordinarios prevé ajuste de +₡12 en gasolina Regular para el próximo mes.
+                </div>
+            </div>
+
+        </div>
+
+        <!-- BARRA SLIDER DÍAS -->
+        <div class="panel-controles">
+            <label for="sliderDias">Antigüedad máxima de noticias:</label>
+            <input type="range" id="sliderDias" min="1" max="30" value="10" onchange="cambiarDias(this.value)">
+            <span id="labelDias">Revisar últimos <strong>10 días</strong></span>
+        </div>
+
+        <!-- SECCIONES DE NOTICIAS -->
+        <h2 class="seccion-titulo">
+            Costa Rica (Sin Deportes) 
+            <span class="contador-noticias-tag" id="contador-cr">0 noticias</span>
+        </h2>
+        <div id="noticias-cr" class="grid-noticias">
+            <p style="color:var(--texto-mutado)">Sincronizando y ordenando feeds nacionales...</p>
+        </div>
+
+        <h2 class="seccion-titulo">
+            Esfera Global e Internacional 
+            <span class="contador-noticias-tag" id="contador-global">0 noticias</span>
+        </h2>
+        <div id="noticias-global" class="grid-noticias">
+            <p style="color:var(--texto-mutado)">Sincronizando y ordenando agencias mundiales...</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. RELOJ CON FORMATO DE SEMANA ISO ---
+        function calcularSemanaISO() {
+            const hoy = new Date();
+            const inicioAnio = new Date(hoy.getFullYear(), 0, 1);
+            const dias = Math.floor((hoy - inicioAnio) / (24 * 60 * 60 * 1000));
+            const numeroSemana = Math.ceil((dias + inicioAnio.getDay() + 1) / 7);
+            
+            let diaSemana = hoy.getDay();
+            if(diaSemana === 0) diaSemana = 7;
+
+            const d = String(hoy.getDate()).padStart(2, '0');
+            const m = String(hoy.getMonth() + 1).padStart(2, '0');
+            const a = hoy.getFullYear();
+
+            document.getElementById('calendario-fiscal').innerHTML = `
+                <span>WW${numeroSemana}.${diaSemana}</span> &nbsp;&nbsp;|&nbsp;&nbsp; ${d}/${m}/${a}
+            `;
+        }
+
+        // --- 2. CONTROL DE GRÁFICOS (1 AÑO) ---
+        let chartDolar, chartCombustibles;
+        const datosAnuales = {
+            dolar: {
+                labels: ['Jun 25', 'Ago 25', 'Oct 25', 'Dic 25', 'Feb 26', 'Abr 26', 'May 26'],
+                venta: [525, 518, 510, 495, 480, 462, 455],
+                compra: [516, 509, 501, 487, 471, 454, 449.5]
+            },
+            gas: {
+                labels: ['Jun 25', 'Ago 25', 'Oct 25', 'Dic 25', 'Feb 26', 'Abr 26', 'May 26'],
+                super: [710, 695, 680, 645, 615, 630, 733],
+                regular: [690, 680, 665, 635, 610, 625, 748],
+                diesel: [620, 600, 590, 575, 550, 564, 716]
+            }
+        };
+
+        function inicializarGraficos() {
+            chartDolar = new Chart(document.getElementById('chartDolar').getContext('2d'), {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            chartCombustibles = new Chart(document.getElementById('chartCombustibles').getContext('2d'), {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            actualizarGraficaDolar();
+            actualizarGraficaCombustibles();
+        }
+
+        function actualizarGraficaDolar() {
+            const filtro = document.getElementById('rangoDolar').value;
+            let limite = filtro === '1M' ? 2 : filtro === '6M' ? 4 : datosAnuales.dolar.labels.length;
+            chartDolar.data.labels = datosAnuales.dolar.labels.slice(-limite);
+            chartDolar.data.datasets = [
+                { label: 'Venta', data: datosAnuales.dolar.venta.slice(-limite), borderColor: '#ce1126', backgroundColor: 'transparent', tension: 0.1 },
+                { label: 'Compra', data: datosAnuales.dolar.compra.slice(-limite), borderColor: '#002f6c', backgroundColor: 'transparent', tension: 0.1 }
+            ];
+            chartDolar.update();
+        }
+
+        function actualizarGraficaCombustibles() {
+            const filtro = document.getElementById('rangoGas').value;
+            let limite = filtro === '3M' ? 3 : filtro === '6M' ? 5 : datosAnuales.gas.labels.length;
+            chartCombustibles.data.labels = datosAnuales.gas.labels.slice(-limite);
+            chartCombustibles.data.datasets = [
+                { label: 'Súper', data: datosAnuales.gas.super.slice(-limite), borderColor: '#ef4444', backgroundColor: 'transparent' },
+                { label: 'Regular', data: datosAnuales.gas.regular.slice(-limite), borderColor: '#f59e0b', backgroundColor: 'transparent' },
+                { label: 'Diésel', data: datosAnuales.gas.diesel.slice(-limite), borderColor: '#3b82f6', backgroundColor: 'transparent' }
+            ];
+            chartCombustibles.update();
+        }
+
+        // --- 3. ALGORITMO INTEGRADO DE CARGA MASIVA Y ORDENAMIENTO ---
+        let maxDias = 10;
+        const PALABRAS_BANEADAS = ['saprissa', 'alajuelense', 'fútbol', 'futbol', 'keylor', 'partido', 'goles', 'torneo', 'campeonato', 'alineación', 'estadio', 'repartieron puntos', 'puntos', 'venció al', 'derrotó a'];
+
+        // Agregado Semanario Universitario a los 4 medios de CR
+        const MEDIOS_CR = [
+            { nombre: 'Semanario Universitario', url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dsite%3Asemanariouniversitario.com%26hl%3Des-419%26gl%3DCR%26ceid%3DCR%3Aes-419' },
+            { nombre: 'CRHoy', url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dsite%3Acrhoy.com%26hl%3Des-419%26gl%3DCR%26ceid%3DCR%3Aes-419' },
+            { nombre: 'Teletica', url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dsite%3Ateletica.com%26hl%3Des-419%26gl%3DCR%26ceid%3DCR%3Aes-419' },
+            { nombre: 'La República', url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dsite%3Alarepublica.net%26hl%3Des-419%26gl%3DCR%26ceid%3DCR%3Aes-419' }
+        ];
+
+        // 4 Medios Globales estables
+        const MEDIOS_GLOBAL = [
+            { nombre: 'BBC Mundo', url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dsource%3ABBC%2BMundo%26hl%3Des-419%26gl%3DUS%26ceid%3DUS%3Aes-419' },
+            { nombre: 'El País', url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dsource%3AEl%2BPa%25C3%25ADs%26hl%3Des-419%26gl%3DUS%26ceid%3DUS%3Aes-419' },
+            { nombre: 'DW Español', url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Frss.dw.com%2Frdf%2Frss-sp-top' },
+            { nombre: 'CNN en Español', url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dsource%3ACNN%2Ben%2BEspa%25C3%25B1ol%26hl%3Des-419%26gl%3DUS%26ceid%3DUS%3Aes-419' }
+        ];
+
+        function cambiarDias(valor) {
+            maxDias = parseInt(valor);
+            document.getElementById('labelDias').innerHTML = `Revisar últimos <strong>${maxDias} días</strong>`;
+            cargarSecciones();
+        }
+
+        async function procesarSeccionUnificada(medios, contenedorId, contadorId, esGlobal) {
+            const contenedor = document.getElementById(contenedorId);
+            const contadorTag = document.getElementById(contadorId);
+            
+            let bolsaNoticias = [];
+            const fechaLimite = new Date();
+            fechaLimite.setDate(fechaLimite.getDate() - maxDias);
+
+            // 1. Recolectar datos en bruto de todos los medios simultáneamente
+            for (const medio of medios) {
+                try {
+                    const respuesta = await fetch(`${medio.url}&_nocache=${Date.now()}`);
+                    const json = await respuesta.json();
+                    
+                    if (!json.items) continue;
+
+                    json.items.forEach(item => {
+                        const titulo = item.title.toLowerCase();
+                        const descripcion = (item.description || '').toLowerCase();
+
+                        // Filtro deportivo estricto
+                        const tieneDeporte = PALABRAS_BANEADAS.some(p => titulo.includes(p) || descripcion.includes(p));
+                        if (tieneDeporte) return;
+
+                        // Filtro de fecha dinámico según control deslizante
+                        const fechaObj = new Date(item.pubDate);
+                        if (fechaObj < fechaLimite) return;
+
+                        bolsaNoticias.push({
+                            medio: medio.nombre,
+                            titulo: item.title,
+                            link: item.link,
+                            contenido: item.content || item.description || '',
+                            fecha: fechaObj
+                        });
+                    });
+                } catch (e) {
+                    console.warn(`Error de conexión con el canal de: ${medio.nombre}`);
+                }
+            }
+
+            // 2. ORDENAMIENTO CRONOLÓGICO TOTAL (La más nueva primero)
+            bolsaNoticias.sort((a, b) => b.fecha - a.fecha);
+
+            // 3. CORTE EXACTO A UN MÁXIMO DE 30 NOTICIAS SOLICITADAS
+            const noticiasFinales = bolsaNoticias.slice(0, 30);
+            contadorTag.innerText = `${noticiasFinales.length} noticias listas`;
+
+            // 4. RENDERIZACIÓN HTML EN BLOQUE
+            let htmlHTML = '';
+            noticiasFinales.forEach(noticia => {
+                const formatoFecha = noticia.fecha.toLocaleDateString('es-CR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                const horaRelativa = noticia.fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+                const extracto = noticia.contenido.replace(/<[^>]*>/g, '').substring(0, 110) + '...';
+
+                htmlHTML += `
+                    <div class="noticia-card">
+                        <div class="noticia-body">
+                            <span class="fuente-tag ${esGlobal ? 'tag-global' : 'tag-cr'}">${noticia.medio}</span>
+                            <h3><a href="${noticia.link}" target="_blank">${noticia.titulo}</a></h3>
+                            <p>${extracto}</p>
+                            <div class="noticia-fecha">
+                                <span>📅 ${formatoFecha}</span>
+                                <span style="font-weight:600; color:var(--primario)">⏱️ ${horaRelativa}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            contenedor.innerHTML = htmlHTML || `<p style="color:var(--texto-mutado)">⚠️ No hay registros cronológicos para estos ${maxDias} días. Intenta expandir el slider.</p>`;
+        }
+
+        function cargarSecciones() {
+            procesarSeccionUnificada(MEDIOS_CR, 'noticias-cr', 'contador-cr', false);
+            procesarSeccionUnificada(MEDIOS_GLOBAL, 'noticias-global', 'contador-global', true);
+        }
+
+        // Ejecución al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            calcularSemanaISO();
+            inicializarGraficos();
+            cargarSecciones();
+        });
+    </script>
+</body>
+</html>
